@@ -66,9 +66,9 @@ class WMTSPyramidParser:
             zoom_level["Resolution"] = 0.00028 * zoom_level['ScaleDenominator']
 
     def print_resolutions(self):
-        print(f"Zoom level | Scale denominator | Resolution")
+        print(f"{'Zoom level' : <10} | {'Scale denominator': <17} | {'Resolution'}")
         for zoom_level in self.zoom_levels:
-            print(f"{zoom_level['Identifier']} | {zoom_level['ScaleDenominator']} | {zoom_level['Resolution']}")
+            print(f"{zoom_level['Identifier']: ^10} | {zoom_level['ScaleDenominator']: <17} | {zoom_level['Resolution']}")
 
 # Matrix tile sets:
 # swissimage: 3857_21
