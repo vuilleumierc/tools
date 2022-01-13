@@ -5,6 +5,17 @@ from xml.etree import ElementTree
 CONSOLE_OUTPUT = False
 
 class WMTSPyramidParser:
+    """
+    Parser to read a given matrix set from a WMTS XML GetCapabilities document
+    and compute the resolution for each zoom level
+
+    Arguments:
+        get_cap_url (str): WMTS GetCapabilities URL
+            e.g. "https://wmts10.geo.admin.ch/EPSG/3857/1.0.0/WMTSCapabilities.xml"
+        matrix_set_code (str): Code of the matrix set to read, e.g. "3857_21"
+    
+    TODO: Exception handling
+    """
 
     def __init__(self, get_cap_url, matrix_set_code):
         self.get_cap_url = get_cap_url
@@ -52,6 +63,9 @@ class WMTSPyramidParser:
         return ElementTree.fromstring(response.content)
 
     def parse(self):
+        """
+        Parse the XML and store matrix set definition
+        """
         counter = 0
         matrix_set_found = False
         store_data = False
@@ -62,10 +76,16 @@ class WMTSPyramidParser:
         self.top_left_corner = [float(coord) for coord in self.zoom_levels[0]["TopLeftCorner"].split(" ")]
 
     def compute_resolutions(self):
+        """
+        Compute resolution for each zoom level
+        """
         for zoom_level in self.zoom_levels:
             zoom_level["Resolution"] = 0.00028 * zoom_level['ScaleDenominator']
 
     def print_resolutions(self):
+        """
+        Output the computed resolutions to the console
+        """
         print(f"{'Zoom level' : <10} | {'Scale denominator': <17} | {'Resolution'}")
         for zoom_level in self.zoom_levels:
             print(f"{zoom_level['Identifier']: ^10} | {zoom_level['ScaleDenominator']: <17} | {zoom_level['Resolution']}")
