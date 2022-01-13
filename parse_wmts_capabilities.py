@@ -62,17 +62,19 @@ class WMTSPyramidParser:
         self.top_left_corner = [float(coord) for coord in self.zoom_levels[0]["TopLeftCorner"].split(" ")]
 
     def compute_resolutions(self):
-        circumference = 2 * self.top_left_corner[1]
         for zoom_level in self.zoom_levels:
-            zoom_level["Resolution"] = circumference / (zoom_level["TileWidth"]*zoom_level["MatrixWidth"])
+            zoom_level["Resolution"] = 0.00028 * zoom_level['ScaleDenominator']
 
     def print_resolutions(self):
         print(f"Zoom level | Scale denominator | Resolution")
         for zoom_level in self.zoom_levels:
             print(f"{zoom_level['Identifier']} | {zoom_level['ScaleDenominator']} | {zoom_level['Resolution']}")
 
-
-parser = WMTSPyramidParser("https://wmts10.geo.admin.ch/EPSG/3857/1.0.0/WMTSCapabilities.xml", "3857_18")
+# Matrix tile sets:
+# swissimage: 3857_21
+# ch.swisstopo.pixelkarte-farbe: 3857_19
+# ch.swisstopo.pixelkarte-farbe: 3857_19
+parser = WMTSPyramidParser("https://wmts10.geo.admin.ch/EPSG/3857/1.0.0/WMTSCapabilities.xml", "3857_21")
 parser.parse()
 parser.compute_resolutions()
 parser.print_resolutions()
