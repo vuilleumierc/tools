@@ -4,6 +4,7 @@ from xml.etree import ElementTree
 
 CONSOLE_OUTPUT = False
 
+
 class WMTSPyramidParser:
     """
     Parser to read a given matrix set from a WMTS XML GetCapabilities document
@@ -13,7 +14,7 @@ class WMTSPyramidParser:
         get_cap_url (str): WMTS GetCapabilities URL
             e.g. "https://wmts10.geo.admin.ch/EPSG/3857/1.0.0/WMTSCapabilities.xml"
         matrix_set_code (str): Code of the matrix set to read, e.g. "3857_21"
-    
+
     TODO: Exception handling
     """
 
@@ -49,7 +50,11 @@ class WMTSPyramidParser:
             text = self.get_text(subelement)
             if store_data:
                 self.zoom_levels[-1][tag] = text
-            if (not matrix_set_found) and (tag == "Identifier") and (text == self.matrix_set_code):
+            if (
+                (not matrix_set_found)
+                and (tag == "Identifier")
+                and (text == self.matrix_set_code)
+            ):
                 matrix_set_found = True
             elif matrix_set_found and (tag == "TileMatrix"):
                 store_data = True
@@ -73,14 +78,16 @@ class WMTSPyramidParser:
             if CONSOLE_OUTPUT:
                 print(self.get_tag(element))
             self.get_subelement(element, counter, matrix_set_found, store_data)
-        self.top_left_corner = [float(coord) for coord in self.zoom_levels[0]["TopLeftCorner"].split(" ")]
+        self.top_left_corner = [
+            float(coord) for coord in self.zoom_levels[0]["TopLeftCorner"].split(" ")
+        ]
 
     def compute_resolutions(self):
         """
         Compute resolution for each zoom level
         """
         for zoom_level in self.zoom_levels:
-            zoom_level["Resolution"] = 0.00028 * zoom_level['ScaleDenominator']
+            zoom_level["Resolution"] = 0.00028 * zoom_level["ScaleDenominator"]
 
     def print_resolutions(self):
         """
@@ -88,13 +95,24 @@ class WMTSPyramidParser:
         """
         print(f"{'Zoom level' : <10} | {'Scale denominator': <17} | {'Resolution'}")
         for zoom_level in self.zoom_levels:
-            print(f"{zoom_level['Identifier']: ^10} | {zoom_level['ScaleDenominator']: <17} | {zoom_level['Resolution']}")
+            print(
+                f"{zoom_level['Identifier']: ^10} | {zoom_level['ScaleDenominator']: <17} | {zoom_level['Resolution']}"
+            )
+
+    def print_scale_denominators(self):
+        for zoom_level in self.zoom_levels:
+            print(8 * " " + f"<double>{zoom_level['ScaleDenominator']}</double>")
+
 
 # Matrix tile sets:
 # swissimage: 3857_21
 # ch.swisstopo.pixelkarte-farbe: 3857_19
 # ch.swisstopo.pixelkarte-farbe: 3857_19
-parser = WMTSPyramidParser("https://wmts10.geo.admin.ch/EPSG/3857/1.0.0/WMTSCapabilities.xml", "3857_21")
+# swissimage: 2056_26
+parser = WMTSPyramidParser(
+    "https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml", "2056_26"
+)
 parser.parse()
 parser.compute_resolutions()
 parser.print_resolutions()
+parser.print_scale_denominators()
