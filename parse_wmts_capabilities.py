@@ -3,6 +3,16 @@ import requests
 from xml.etree import ElementTree
 
 CONSOLE_OUTPUT = False
+OGC_PIXEL_SIZE = 0.00028  # The OGC standard pixel size in meter
+
+GRIDSET_XML_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
+<gridSet>
+"""
+GRIDSET_XML_FOOTER = """  <yCoordinateFirst>false</yCoordinateFirst>
+  <alignTopLeft>false</alignTopLeft>
+  <metersPerUnit>1.0</metersPerUnit>
+  <pixelSize>2.8E-4</pixelSize>
+</gridSet>"""
 
 
 class WMTSPyramidParser:
@@ -87,7 +97,7 @@ class WMTSPyramidParser:
         Compute resolution for each zoom level
         """
         for zoom_level in self.zoom_levels:
-            zoom_level["Resolution"] = 0.00028 * zoom_level["ScaleDenominator"]
+            zoom_level["Resolution"] = OGC_PIXEL_SIZE * zoom_level["ScaleDenominator"]
 
     def print_resolutions(self):
         """
@@ -103,16 +113,75 @@ class WMTSPyramidParser:
         for zoom_level in self.zoom_levels:
             print(8 * " " + f"<double>{zoom_level['ScaleDenominator']}</double>")
 
+    def compute_bounds(self, zoom_level):
+        tile_matrix = self.zoom_levels[zoom_level]
+        top_left_corner = tile_matrix["TopLeftCorner"].split(" ")
+        scale_denominator = tile_matrix["ScaleDenominator"]
+        self.tile_width = tile_matrix["TileWidth"]
+        self.tile_height = tile_matrix["TileHeight"]
+        matrix_width = tile_matrix["MatrixWidth"]
+        matrix_height = tile_matrix["MatrixHeight"]
+        pixel_span = scale_denominator * OGC_PIXEL_SIZE
+        tile_span_x = self.tile_width * pixel_span
+        tile_span_y = self.tile_height * pixel_span
+
+        self.xmin = float(top_left_corner[0])
+        self.ymax = float(top_left_corner[1])
+        self.xmax = self.xmin + tile_span_x * matrix_width
+        self.ymin = self.ymax - tile_span_y * matrix_height
+        print(f"Bounds: {self.xmin}, {self.ymin}, {self.xmax}, {self.ymax}")
+        print(f"Tile width and height (pixel): {self.tile_width}, {self.tile_height}")
+
+    def print_gridset_xml(self, name, srs_number):
+        with open(f"{srs_number}.xml", "w") as xml_file:
+            xml_file.write(GRIDSET_XML_HEADER)
+            xml_file.write(f"  <name>{name}</name>\n")
+            xml_file.write(
+                f"""  <srs>
+    <number>{srs_number}</number>
+  </srs>\n"""
+            )
+
+            # Print extent
+            xml_file.write(
+                f"""  <extent>
+    <coords>
+      <double>{self.xmin}</double>
+      <double>{self.ymin}</double>
+      <double>{self.xmax}</double>
+      <double>{self.ymax}</double>
+    </coords>
+  </extent>\n"""
+            )
+
+            # Print resolutions
+            xml_file.write("  <resolutions>\n")
+            for zoom_level in self.zoom_levels:
+                xml_file.write(
+                    f"    <double>{zoom_level['ScaleDenominator'] * OGC_PIXEL_SIZE}</double>\n"
+                )
+            xml_file.write("  </resolutions>\n")
+
+            # Print scale names
+            xml_file.write("  <scaleNames>\n")
+            for zoom_level in self.zoom_levels:
+                xml_file.write(
+                    f"    <string>{name}:{zoom_level['Identifier']}</string>\n"
+                )
+            xml_file.write("  </scaleNames>\n")
+
+            xml_file.write(f"  <tileHeight>{self.tile_height}</tileHeight>\n")
+            xml_file.write(f"  <tileWidth>{self.tile_width}</tileWidth>\n")
+            xml_file.write(GRIDSET_XML_FOOTER)
+
 
 # Matrix tile sets:
-# swissimage: 3857_21
-# ch.swisstopo.pixelkarte-farbe: 3857_19
-# ch.swisstopo.pixelkarte-farbe: 3857_19
-# swissimage: 2056_26
+# ch.swisstopo.swissimage: 2056_28
+# ch.swisstopo.pixelkarte-farbe: 2056_27
+# ch.swisstopo.pixelkarte-grau: 2056_27
 parser = WMTSPyramidParser(
-    "https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml", "2056_26"
+    "https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml", "2056_28"
 )
 parser.parse()
-parser.compute_resolutions()
-parser.print_resolutions()
-parser.print_scale_denominators()
+parser.compute_bounds(0)
+parser.print_gridset_xml("EPSG:2056", 2056)
