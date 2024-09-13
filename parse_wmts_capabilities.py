@@ -179,9 +179,11 @@ class WMTSPyramidParser:
 # ch.swisstopo.swissimage: 2056_28
 # ch.swisstopo.pixelkarte-farbe: 2056_27
 # ch.swisstopo.pixelkarte-grau: 2056_27
+EPSG = 21781  # 2056
 parser = WMTSPyramidParser(
-    "https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml", "2056_28"
+    f"https://wmts.geo.admin.ch/EPSG/{EPSG}/1.0.0/WMTSCapabilities.xml", f"{EPSG}_28"
 )
 parser.parse()
 parser.compute_bounds(0)
-parser.print_gridset_xml("EPSG:2056", 2056)
+parser.print_scale_denominators()
+parser.print_gridset_xml(f"EPSG:{EPSG}", EPSG)
